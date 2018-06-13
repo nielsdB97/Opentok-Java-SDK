@@ -294,6 +294,67 @@ public class HttpClient extends DefaultAsyncHttpClient {
 
         return responseString;
     }
+
+    public String dial(String sessionId, String token, String sipUri, Object options) throws OpenTokException {
+        String requestBody = null;
+        String responseString = null;
+        Response response = null;
+
+        JsonNodeFactory nodeFactory = JsonNodeFactory.instance;
+
+        ObjectNode sipHeadersJson = nodeFactory.objectNode();
+        sipHeadersJson.put("Content-Type", "application/json");
+
+        ObjectNode sipAuthJson = nodeFactory.objectNode();
+        sipAuthJson.put("username", "test");
+        sipAuthJson.put("password", "test");
+
+        ObjectNode sipJson = nodeFactory.objectNode();
+        sipJson.put("uri", "sip:user@sip.partner.com;transport=tls");
+        sipJson.put("from", "from@example.com");
+        sipJson.set("headers", sipHeadersJson);
+        sipJson.set("auth", sipAuthJson);
+        sipJson.put("secure", true);
+
+        ObjectNode requestJson = nodeFactory.objectNode();
+        requestJson.put("sessionId", sessionId);
+        requestJson.put("token", token);
+        requestJson.set("sip", sipJson);
+
+        try {
+            requestBody = new ObjectMapper().writeValueAsString(requestJson);
+        } catch (JsonProcessingException e) {
+            throw new OpenTokException("Could not initiate SIP call. The JSON body encoding failed.", e);
+        }
+
+        Future<Response> request = this.preparePost(this.apiUrl + "/v2/project/" + this.apiKey + "/dial")
+                .addHeader("Accept", "application/json")
+                .setBody(requestBody)
+                .execute();
+
+        try {
+            response = request.get();
+            switch (response.getStatusCode()) {
+                case 200:
+                    responseString = response.getResponseBody();
+                    break;
+                case 400:
+                    throw new RequestException("Bad session ID, token, SIP credentials, or SIP URI (sip:user@domain.tld)");
+                case 403:
+                    throw new RequestException("Could not initiate SIP call. Invalid API key or secret.");
+                case 409:
+                    throw new RequestException("Could not initiate SIP call. Only Routed Sessions are allowed to initiate SIP Calls.");
+                case 500:
+                    throw new RequestException("Could not initiate SIP call. A server error occurred.");
+                default:
+                    throw new RequestException("Could not initiate SIP call. The server response was invalid." +
+                            " response code: " + response.getStatusCode());
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RequestException("Could not initiate SIP call", e);
+        }
+        return responseString;
+    }
     
     public static enum ProxyAuthScheme {
         BASIC,

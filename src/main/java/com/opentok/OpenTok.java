@@ -433,6 +433,20 @@ public class OpenTok {
     public void deleteArchive(String archiveId) throws OpenTokException {
         this.client.deleteArchive(archiveId);
     }
+
+
+    /**
+     * Deletes an OpenTok archive.
+     * <p>
+     * You can only delete an archive which has a status of "available" or "uploaded". Deleting an
+     * archive removes its record from the list of archives. For an "available" archive, it also
+     * removes the archive file, making it unavailable for download.
+     *
+     * @param archiveId The archive ID of the archive you want to delete.
+     */
+    public void dial(String sessionId, String token, String sipUri, Object opts) throws OpenTokException {
+        this.client.dial(sessionId, token, sipUri, opts);
+    }
     
     public static class Builder {
         private int apiKey;
